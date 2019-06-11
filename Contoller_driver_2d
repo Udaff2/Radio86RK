@@ -1,0 +1,171 @@
+module controller_driver_2d (
+	input				  	start,
+	input				  	sensor,
+	input				  	nul,
+	output				  step,
+	output	[07:00]	digit,
+	output	[07:00]	ind,
+	input				  	clk
+);
+parameter tick = 125000;
+reg [30:00] cnt;
+always @(posedge clk)
+begin
+if (!start)
+begin
+	if (!sensor)
+	begin
+			if (cnt == tick+1)
+				begin
+					cnt <= 0;
+				end
+			else
+				begin
+					if (cnt == tick)
+					begin
+						step <= 1;
+					end
+					else if (cnt !== tick)
+					begin
+						step <= 0;
+					end
+					cnt = cnt + 1;
+				end
+	end
+end
+end
+// indication
+reg [15:0]c = 1'b0;
+reg [2:0]dynamic_temp = 1'b0;
+reg [07:00] i_1;
+reg [07:00] i_2;
+reg [07:00] i_3;
+reg [07:00] i_4;
+reg [07:00] i_5;
+reg [04:00] x1 = 1'b0;
+reg [04:00] x2 = 1'b0;
+reg [04:00] x3 = 1'b0;
+reg [04:00] x4 = 1'b0;
+reg [04:00] x5 = 1'b0;
+ always @(posedge clk)
+begin
+if (!nul)	
+begin
+	x1 = 0;
+	x2 = 0;
+	x3 = 0;
+	x4 = 0;
+	x5 = 0;
+end 
+if (step)
+begin
+	if (x1 == 1)
+		begin
+			x1 = 0;
+			x2 = x2 + 1;
+		end
+	else
+		begin
+			x1 = x1 + 1;
+		end
+	if (x2 == 4)
+		begin
+			x2 = 0;
+			x3 = x3+1;
+		end
+	if (x3 == 10)
+		begin
+			x3 = 0;
+			x4 = x4 + 1;
+		end
+	if (x4 == 10)
+		begin
+			x4 = 0;
+			x5 = x5 + 1;
+		end
+	if (x5 == 8)
+		begin
+			x5 = 0;
+		end
+end
+end
+assign i_1 = (x1 == 0) ? 8'b11000000: 8'b10010010;
+assign i_2 = (x2 == 0) ? 8'b11000000:
+				 (x2 == 1) ? 8'b10100100:
+				 (x2 == 2) ? 8'b10010010: 8'b11111000;
+assign i_3 = (x3 == 0) ? 8'b11000000:
+				 (x3 == 1) ? 8'b11111001:
+				 (x3 == 2) ? 8'b10100100:
+				 (x3 == 3) ? 8'b10110000:
+				 (x3 == 4) ? 8'b10011001:
+				 (x3 == 5) ? 8'b10010010:
+				 (x3 == 6) ? 8'b10000010:
+				 (x3 == 7) ? 8'b11111000:
+				 (x3 == 8) ? 8'b10000000: 8'b10010000; 
+assign i_4 = (x4 == 0) ? 8'b01000000:
+				 (x4 == 1) ? 8'b01111001:
+				 (x4 == 2) ? 8'b00100100:
+				 (x4 == 3) ? 8'b00110000:
+				 (x4 == 4) ? 8'b00011001:
+				 (x4 == 5) ? 8'b00010010:
+				 (x4 == 6) ? 8'b00000010:
+				 (x4 == 7) ? 8'b01111000:
+				 (x4 == 8) ? 8'b00000000: 8'b10010000;
+assign i_5 = (x5 == 0) ? 8'b11000000:
+				 (x5 == 1) ? 8'b11111001:
+				 (x5 == 2) ? 8'b10100100:
+				 (x5 == 3) ? 8'b10110000:
+				 (x5 == 4) ? 8'b10011001:
+				 (x5 == 5) ? 8'b10010010:
+				 (x5 == 6) ? 8'b10000010:
+				 (x5 == 7) ? 8'b11111000: 8'b10000000;
+always @ (posedge clk) begin 
+  c <= c + 1'b1;           
+  if(c == 0)                  
+  begin
+    dynamic_temp <= dynamic_temp + 1'b1; 
+  end
+  case(dynamic_temp)
+    3'b000 :  
+    begin
+     ind = 8'b11000000;
+     digit = 8'b11111110;
+    end
+	 3'b001 :  
+    begin
+     ind = i_1; 
+     digit = 8'b11111101;
+    end
+    3'b010 :  
+    begin
+     ind = i_2; 
+     digit = 8'b11111011;
+    end
+    3'b011 :  
+    begin
+     ind = i_3; 
+     digit = 8'b11110111;
+    end
+    3'b100 :  
+    begin
+     ind = i_4; 
+     digit = 8'b11101111;
+    end
+    3'b101 :  
+    begin
+     ind = i_5; 
+     digit = 8'b11011111;
+    end
+    3'b110 :  
+    begin
+     ind = 8'b10110111; // знак =
+     digit = 8'b10111111;
+    end
+    3'b111 :  
+    begin
+     ind = 8'b11000111; // буква L
+     digit = 8'b01111111;
+    end
+  endcase
+  end
+endmodule
